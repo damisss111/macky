@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: MacOS via Namespace
-    runs-on: namespace-profile-batissh
+    runs-on: namespace-profile-macc
 
     steps:
       - name: Set up Remote Desktop Access
