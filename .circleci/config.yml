@@ -1,22 +1,22 @@
 version: 2.1
 
 jobs:
-  trial:
-    docker:
-      - image: cimg/python:3.11
-    parallelism: 12  # Run this job in 12 parallel containers
+  crd-debug:
+    machine: true
     steps:
       - run:
-          name: Setup & Check Info
+          name: Keep Alive Forever (SSH & Python Ready)
           command: |
-            apt-get update && apt-get install -y curl lscpu
-            echo "🔁 Running on Debian Trixie Backports"
-            lscpu
-            cat /etc/debian_version
-            uname -a
+            echo "🟢 VM is running. SSH in from CircleCI → 'Rerun with SSH'"
+            echo "⏳ This VM will stay alive for 5 hours unless cancelled."
+            echo "🐍 You can install CRD manually using Python or Bash."
+            sudo apt update
+            sudo apt install -y python3 curl wget sudo lsb-release
+            echo "Ready for your Python code..."
+            while true; do sleep 60; done
 
 workflows:
   version: 2.1
-  build:
+  crd-workflow:
     jobs:
-      - trial
+      - crd-debug
