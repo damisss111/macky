@@ -1,22 +1,31 @@
 version: 2.1
 
 jobs:
-  crd-debug:
+  systemd-helper:
     machine: true
     steps:
       - run:
-          name: Keep Alive Forever (SSH & Python Ready)
+          name: Setup and Launch tmate Manually
           command: |
-            echo "🟢 VM is running. SSH in from CircleCI → 'Rerun with SSH'"
-            echo "⏳ This VM will stay alive for 5 hours unless cancelled."
-            echo "🐍 You can install CRD manually using Python or Bash."
+            echo "🔧 Installing tmate and tools..."
             sudo apt update
-            sudo apt install -y python3 curl wget sudo lsb-release
-            echo "Ready for your Python code..."
-            while true; do sleep 60; done
+            sudo apt install -y tmate openssh-client sudo curl wget python3
+
+            echo "🟢 Launching tmate session..."
+            tmate -S /tmp/tmate.sock new-session -d
+            tmate -S /tmp/tmate.sock wait tmate-ready
+            TMATE_SSH=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+            TMATE_WEB=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+            
+            echo "📡 SSH session ready:"
+            echo "🔐 SSH  > $TMATE_SSH"
+            echo "🌐 Web  > $TMATE_WEB"
+
+            echo "⏳ Keeping session alive for 5 hours..."
+            sleep 18000
 
 workflows:
   version: 2.1
-  crd-workflow:
+  session:
     jobs:
-      - crd-debug
+      - systemd-helper
