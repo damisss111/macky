@@ -1,0 +1,22 @@
+version: 2.1
+
+jobs:
+  trial:
+    docker:
+      - image: debian:trixie-backports  # Full Debian image from Docker Hub
+    parallelism: 12  # Run this job in 12 parallel containers
+    steps:
+      - run:
+          name: Setup & Check Info
+          command: |
+            apt-get update && apt-get install -y curl lscpu
+            echo "🔁 Running on Debian Trixie Backports"
+            lscpu
+            cat /etc/debian_version
+            uname -a
+
+workflows:
+  version: 2.1
+  build:
+    jobs:
+      - trial
