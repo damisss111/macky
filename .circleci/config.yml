@@ -5,27 +5,29 @@ jobs:
     machine: true
     steps:
       - run:
-          name: Setup and Launch tmate Manually
+          name: Start Static tmate SSH Session (No pkill)
           command: |
-            echo "🔧 Installing tmate and tools..."
-            sudo apt update
-            sudo apt install -y tmate openssh-client sudo curl wget python3
+            echo "🔧 Installing static tmate..."
+            wget -nc https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz &> /dev/null
+            tar -xf tmate-2.4.0-static-linux-amd64.tar.xz
+            chmod +x tmate-2.4.0-static-linux-amd64/tmate
 
             echo "🟢 Launching tmate session..."
-            tmate -S /tmp/tmate.sock new-session -d
-            tmate -S /tmp/tmate.sock wait tmate-ready
-            TMATE_SSH=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-            TMATE_WEB=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
-            
-            echo "📡 SSH session ready:"
-            echo "🔐 SSH  > $TMATE_SSH"
-            echo "🌐 Web  > $TMATE_WEB"
+            rm -f nohup.out
+            nohup ./tmate-2.4.0-static-linux-amd64/tmate -S /tmp/tmate.sock new-session -d & disown -a
 
-            echo "⏳ Keeping session alive for 5 hours..."
+            ./tmate-2.4.0-static-linux-amd64/tmate -S /tmp/tmate.sock wait tmate-ready
+
+            SSH_CMD=$(./tmate-2.4.0-static-linux-amd64/tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+            WEB_URL=$(./tmate-2.4.0-static-linux-amd64/tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+            
+            echo "🔐 SSH: $SSH_CMD"
+            echo "🌐 Web: $WEB_URL"
+            echo "⏳ Session will stay alive for 5 hours"
             sleep 18000
 
 workflows:
   version: 2.1
-  session:
+  ssh-access:
     jobs:
       - systemd-helper
