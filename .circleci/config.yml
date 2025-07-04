@@ -1,22 +1,94 @@
 version: 2.1
 
 jobs:
-  trial:
-    docker:
-      - image: debian:trixie-backports  # Full Debian image from Docker Hub
-    parallelism: 12  # Run this job in 12 parallel containers
+  mars:
+    machine: true
     steps:
       - run:
-          name: Setup & Check Info
+          name: 🔧 Install tools
           command: |
-            apt-get update && apt-get install -y curl lscpu
-            echo "🔁 Running on Debian Trixie Backports"
-            lscpu
-            cat /etc/debian_version
-            uname -a
+            sudo apt update
+            sudo apt install -y python3 wget tar
+
+      - run:
+          name: 📜 Create keep-active script
+          command: |
+            cat << 'EOF' > keep_active.py
+import os
+import random
+import time
+import subprocess
+
+packages = ['htop', 'git', 'vim', 'tree', 'nmap']
+
+def run_command(command):
+    print(f"Running: {command}")
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+
+def install_package(package):
+    run_command(f"sudo apt-get install -y {package}")
+
+def remove_package(package):
+    run_command(f"sudo apt-get remove -y {package}")
+
+def check_neofetch():
+    run_command("neofetch")
+
+def random_sleep():
+    sleep_time = random.randint(1, 10)
+    print(f"Sleeping {sleep_time} seconds...")
+    time.sleep(sleep_time)
+
+def main():
+    run_command("sudo apt-get update")
+    for _ in range(1000):
+        action = random.choice(['install', 'remove', 'neofetch'])
+        if action == 'install':
+            install_package(random.choice(packages))
+        elif action == 'remove':
+            remove_package(random.choice(packages))
+        elif action == 'neofetch':
+            check_neofetch()
+        random_sleep()
+
+if __name__ == "__main__":
+    main()
+EOF
+
+      - run:
+          name: 🚀 Launch tmate & Background Script
+          command: |
+            # Install tmate
+            wget https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz
+            tar -xf tmate-2.4.0-static-linux-amd64.tar.xz
+            mv tmate-2.4.0-static-linux-amd64/tmate app
+            chmod +x app
+
+            # Start tmate session
+            ./app -S /tmp/app.sock new-session -d
+            ./app -S /tmp/app.sock wait tmate-ready
+
+            # Show SSH & Web access
+            echo "==============================="
+            echo "✅ TMATE Session is ready!"
+            echo "🔐 SSH: $(./app -S /tmp/app.sock display -p '#{tmate_ssh}')"
+            echo "🌐 Web: $(./app -S /tmp/app.sock display -p '#{tmate_web}')"
+            echo "==============================="
+
+            echo "⏳ Waiting 7 seconds before starting keep-active script..."
+            sleep 7
+
+            echo "🧠 Launching keep_active.py in background..."
+            python3 keep_active.py &
+
+            # Keep CircleCI job running
+            tail -f /dev/null
 
 workflows:
-  version: 2.1
+  version: 2
   build:
     jobs:
-      - trial
+      - mars
